@@ -7,8 +7,18 @@ router.get('/', function(req, res, next) {
 		res.render('index');
 	}
 	else {
-		console.log( req )
-  		res.render('index', { title: 'Express', request: req.url});
+		if(req.url.indexOf("capitalOne") != -1) {
+  			res.send('Capital One');
+  		}
+  		else if(req.url.indexOf("dateTime") != -1) {
+  			res.send("Date and Time");
+  		}
+  		else if(req.url.indexOf("weather") != -1){
+  			res.send("Weather");
+  		}
+  		else {
+  			res.render('index' , {title: 'Express'});
+  		}
   	}
 });
 
