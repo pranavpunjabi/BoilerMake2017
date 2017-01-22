@@ -69,6 +69,9 @@
 #define SSD1331_CMD_VCOMH 			0xBE
 #define SSD1331_CMD_DRAWRECT 	    0x22
 
+enum Page {PAGE_DATE_TIME, PAGE_WEATHER, PAGE_CAPITALONE, PAGE_STOCKS, PAGE_DEVICE_SPECS};
+Page currentPage = PAGE_STOCKS;
+
 typedef struct weather
 {
 	uint8_t typeDay;
@@ -84,14 +87,26 @@ typedef struct news
 	int currentIndex;
 }News;
 
-typedef struct time_now
+typedef struct datetime
 {
-	//Minute Hand <x,y> coordinates
 	int min;
-	
-	//Hour Hand <x,y> coordinates
 	int hour;
-}TimeNow;
+	int year;
+	int month;
+	int day;
+}DateTime;
+
+class StockData
+{
+    public:
+    String company;
+    String value;
+};
+
+DateTime neram;
+StockData kaasu[4];
+
+int processCounter = 0;
 
 void spi_init()
 {
@@ -492,16 +507,88 @@ void drawDigit(int digit, int sRow, int sCol, int eRow, int eCol, uint16_t color
 	}
 }
 
-void drawTimeMenu(int hour, int mins, int ledNo)
+void drawTimeMenu()
 {
+    int hour = neram.hour; 
+    int mins = neram.min;
+    
+    fill_color(BLACK, LED_ONE);
+    fill_color(BLACK, LED_TWO);
 	// dimensions: 96 * 64
 	//drawDigit(int digit, int sRow, int sCol, int eRow, int eCol)
-	drawDigit(hour/10, 10, 10, 54, 19, RED, ledNo);
-	drawDigit(hour%10, 10, 32, 54, 41, RED, ledNo);
-	draw_line(25,47,27,47, RED, ledNo);
-	draw_line(37,47,39,47, RED, ledNo);
-	drawDigit(mins/10, 10, 54, 54, 63, RED, ledNo);
-	drawDigit(mins%10, 10, 76, 54, 85, RED, ledNo);
+	if(hour/10 != 0) drawDigit(hour/10, 10, 10, 54, 19, RED, LED_ONE);
+	drawDigit(hour%10, 10, 32, 54, 41, RED, LED_ONE);
+	draw_line(25,47,27,47, RED, LED_ONE);
+	draw_line(37,47,39,47, RED, LED_ONE);
+	drawDigit(mins/10, 10, 54, 54, 63, RED, LED_ONE);
+	drawDigit(mins%10, 10, 76, 54, 85, RED, LED_ONE);
+	
+	int year = neram.year;
+	int month = neram.month;
+	int day = neram.day;
+	
+	drawDigit(day/10,       10,  6, 54, 26, RED, LED_TWO);
+	drawDigit(day%10,       10, 30, 54, 50, RED, LED_TWO);
+	
+	if(month/10 != 0) drawDigit(month/10,     10, 55, 30, 70, RED, LED_TWO);
+	drawDigit(month%10,     10, 75, 30, 85, RED, LED_TWO);
+	
+	drawDigit(year/10%10,   35, 55, 55, 70, RED, LED_TWO);
+	drawDigit(year%10,      35, 75, 55, 85, RED, LED_TWO);
+	
+}
+
+void drawStocks()
+{
+    fill_color(CYAN, LED_ONE);
+    fill_color(BLUE, LED_TWO);
+    
+    int startRow = 5;
+    int startIdx = 5;
+    int height = 10;
+    int width = 14;
+    for(int i = 0; i < kaasu[0].company.length(); ++i)
+    {
+        drawCharacter(kaasu[0].company[i], startRow, startIdx, startRow + height, startIdx + width, RED, LED_ONE);
+        startIdx += width + 3;
+    }
+    
+    startIdx = 20;
+    startRow += height + 3;
+    for(int i = 0; i < kaasu[0].value.length(); ++i)
+    {
+        drawCharacter(kaasu[0].value[i], startRow, startIdx, startRow + height, startIdx + width, RED, LED_ONE);
+        startIdx += width + 3;
+    }
+    
+    startIdx = 5;
+    startRow += height + 3;
+    for(int i = 0; i < kaasu[1].company.length(); ++i)
+    {
+        drawCharacter(kaasu[1].company[i], startRow, startIdx, startRow + height, startIdx + width, RED, LED_ONE);
+        startIdx += width + 3;
+    }
+    
+    startIdx = 20;
+    startRow += height + 3;
+    for(int i = 0; i < kaasu[1].value.length(); ++i)
+    {
+        drawCharacter(kaasu[1].value[i], startRow, startIdx, startRow + height, startIdx + width, RED, LED_ONE);
+        startIdx += width + 3;
+    }
+}
+
+void drawCurrentPage()
+{
+    if(currentPage == PAGE_DATE_TIME)
+        drawTimeMenu();
+    else if(currentPage == PAGE_WEATHER)
+        drawWeatherInfo();
+    else if(currentPage == PAGE_STOCKS)
+        drawStocks();
+    else
+        drawTimeMenu();
+    
 }
 
 void initializeOLED(int ledNo)
@@ -641,56 +728,49 @@ void getDay(char *day , int dayNum)
 	}
 }	
 
-
-void drawWeatherInfo(int ledNo)
+void drawWeatherInfo()
 {
-    fill_color(BLACK, ledNo);
+    fill_color(BLACK, LED_ONE);
+    fill_color(BLACK, LED_TWO);
 	int i = 0;
-	char day[4];
-	//day[0] = 'W';
-	//day[1] = 'E';
-	//day[2] = 'D';
-	//day[3] = '\0';
 	int increment = 0;
-	//prints day
-	drawCharacter(day[0],0 + increment,2 ,7 + increment,10,RED, ledNo);
-	drawCharacter(day[1],9 + increment,2 ,16 + increment,10,RED, ledNo);
-	drawCharacter(day[2],18 + increment,2 ,25 + increment,10,RED, ledNo);
-	
+
 	//prints temp
-	drawCharacter('O',0 + increment,37,3 + increment,40,RED, ledNo);
+	drawCharacter('O',0, 77, 3, 80, RED, LED_ONE);
 	//drawCharacter('E',0 + increment,36,6 + increment,40,RED);
-	drawCharacter('F',0 + increment,42,6 + increment,48,RED, ledNo);
+	drawCharacter('F',0, 82, 6, 88, RED, LED_ONE);
 	//drawCharacter('P',0 + increment,48,6 + increment,52,RED);
 	
 	int temperature = weatherObject[i].temperature;
 	if(temperature < 0)
 	{
-		draw_line(15 + increment,31,15 + increment,34,CYAN, ledNo);
+		draw_line(32, 2, 32, 8, CYAN, LED_ONE);
 		temperature = temperature*(-1);
 	}
 	int tempOnes = temperature % 10;
 	int tempTens = (temperature/10) % 10;
+	int tempHund = (temperature/100);
 	//draw_line(0,0,63,95,GREEN);	// The perfect diagonal
 
-	drawDigit(tempTens,10 + increment,36,20 + increment,39,CYAN, ledNo);
-	drawDigit(tempOnes,10 + increment,41,20 + increment,44,CYAN, ledNo);
+	drawDigit(tempHund,15, 15, 59, 35, CYAN, LED_ONE);
+	drawDigit(tempTens,15, 41, 59, 61, CYAN, LED_ONE);
+	drawDigit(tempOnes,15, 67, 59, 87, CYAN, LED_ONE);
 
-	drawCharacter('M',0 + increment,76,6 + increment,80,RED, ledNo);
-	drawCharacter('P',0 + increment,82,6 + increment,86,RED, ledNo);
-	drawCharacter('H',0 + increment,88,6 + increment,92,RED, ledNo);
+	drawCharacter('M', 0, 76, 6, 80, RED, LED_TWO);
+	drawCharacter('P', 0, 82, 6, 86, RED, LED_TWO);
+	drawCharacter('H', 0, 88, 6, 92, RED, LED_TWO);
 	
 	int windSpeed = weatherObject[i].windSpeed;
 	if(windSpeed < 0)
 	{
-		draw_line(15 + increment,71,15 + increment,74,CYAN, ledNo);
+		draw_line(32, 2, 32, 8, CYAN, LED_TWO);
 		windSpeed = windSpeed*(-1);
 	}
 	int windOnes = windSpeed % 10;
 	int windTens = (windSpeed / 10) % 10;
 
-	drawDigit(windTens,10 + increment,76,20 + increment,79,CYAN, ledNo);
-	drawDigit(windOnes,10 + increment,81,20 + increment,84,CYAN, ledNo);
+	drawDigit(windTens,15, 25, 59, 45, CYAN, LED_TWO);
+	drawDigit(windOnes,15, 51, 59, 71, CYAN, LED_TWO);
 	
 	increment += 36;
 }
@@ -780,17 +860,65 @@ void weatherHandler(const char *event, const char *data)
     weatherObject[0].temperature = temp;
     weatherObject[0].windSpeed = windSpeed;
     
-    drawWeatherInfo(LED_TWO);
+    if(currentPage == PAGE_WEATHER)
+    {
+        drawCurrentPage();
+    }
 }
 
 void dateTimeHandler(const char *event, const char *data)
 {
-    Particle.publish("temp", data);
+    //Particle.publish("temp", data);
+    
+    int i = 0;
+    
+    neram.year = 0;
+    neram.month = 0;
+    neram.day = 0;
+    neram.hour = 0;
+    neram.min = 0;
+    for(i = 0; i < 4; ++i)
+    {
+        neram.year = neram.year * 10 + ( data[i] - '0' );
+    }
+    
+    for(i = 5; i < 7; ++i)
+    {
+        neram.month = neram.month * 10 + ( data[i] - '0' );
+    }
+    
+    for(i = 8; i < 10; ++i)
+    {
+        neram.day = neram.day * 10 + ( data[i] - '0' );
+    }
+    
+    for(i = 11; i < 13; ++i)
+    {
+        neram.hour = neram.hour * 10 + ( data[i] - '0' );
+    }
+    
+    for(i = 14; i < 16; ++i)
+    {
+        neram.min = neram.min * 10 + ( data[i] - '0' );
+    }
+    
+    if(currentPage == PAGE_DATE_TIME)
+    {
+        drawCurrentPage();
+    }
 }
 
 void capitalOneHandler(const char *event, const char *data)
 {
     Particle.publish("temp", data);
+}
+
+void requestAllData()
+{
+    Particle.publish("weather");
+    Particle.publish("dateTime");
+    Particle.publish("stocks", "dummy_data");
+    //Particle.publish("capitalOne");
 }
 
 void setup()
@@ -800,10 +928,21 @@ void setup()
     initializeOLED(LED_TWO);
     
     Particle.subscribe("hook-response/weather", weatherHandler, MY_DEVICES);
-    //Particle.subscribe("hook-response/dateTime", dateTimeHandler, MY_DEVICES);
+    Particle.subscribe("hook-response/dateTime", dateTimeHandler, MY_DEVICES);
     //Particle.subscribe("hook-response/capitalOne", capitalOneHandler, MY_DEVICES);
-    //Particle.subscribe("hook-response/stocks", weatherHandler, MY_DEVICES);
+    //Particle.subscribe("hook-response/stocks", stocksHandler, MY_DEVICES);
     
+    requestAllData();
+    
+    kaasu[0].company = "MSFT";
+    kaasu[1].company = "GOOG";
+    kaasu[0].value = "10.2";
+    kaasu[1].value = "10002.33";
+    neram.min = 43;
+	neram.hour = 9;
+	neram.year = 2017;
+	neram.month = 01;
+	neram.day = 22;
     int transacts[] = {1,2,3,4,5,6,7,8,9,11};
     int number_transacts = 10;
     
@@ -817,18 +956,22 @@ void setup()
 	
 	//delay_ms(60000);
 	
-    fill_color(BLACK, LED_ONE);
-    drawTimeMenu(88,88, LED_ONE);
-    drawWeatherInfo(LED_TWO);
+	drawCurrentPage();
 }
 
 void loop()
 {
     String temperature = String(random(60, 80));
     //Particle.publish("temp", temperature, PRIVATE);
-    Particle.publish("weather");
-    //Particle.publish("dateTime");
-    //Particle.publish("capitalOne");
+
+    
+    processCounter += 30; 
     delay(30000);
+    
+    if(processCounter == 120)
+    {
+        processCounter = 0;
+        requestAllData();
+    }
     //Particle.publish("stocks");    TODO:: ADD STOCKS
 }
