@@ -17,6 +17,10 @@
 #define DC_OLED2	D1	
 #define CS_OLED2	D5
 
+//Push Buttons
+#define PB_1 D6
+#define PB_2 D7
+
 #define LED_ONE     1
 #define LED_TWO     2
 
@@ -69,8 +73,10 @@
 #define SSD1331_CMD_VCOMH 			0xBE
 #define SSD1331_CMD_DRAWRECT 	    0x22
 
-enum Page {PAGE_DATE_TIME, PAGE_WEATHER, PAGE_CAPITALONE, PAGE_STOCKS, PAGE_DEVICE_SPECS};
-Page currentPage = PAGE_STOCKS;
+enum Page {PAGE_DATE_TIME=0, PAGE_WEATHER=1, PAGE_CAPITALONE=2, PAGE_STOCKS=3};
+Page currentPage = PAGE_CAPITALONE;
+int PB_1ButtonState = 0;
+int PB_2ButtonState = 0;
 
 typedef struct weather
 {
@@ -107,6 +113,9 @@ DateTime neram;
 StockData kaasu[4];
 
 int processCounter = 0;
+
+int transactions[] = {1,-2,3,-4,5,6,-7,-8,-9,11};
+int noTransactions = 10;
 
 void spi_init()
 {
@@ -262,6 +271,16 @@ void draw_line(uint8_t sRow, uint8_t sCol, uint8_t eRow, uint8_t eCol, uint16_t 
 
 void drawCharacter(char character, int sRow, int sCol, int eRow, int eCol, uint16_t color, int ledNo)
 {
+    if(character >= '0' && character <= '9')
+    {
+        drawDigit(character - '0', sRow, sCol, eRow, eCol, color, ledNo);
+        return;
+    }
+    else if(character == '.')
+    {
+        draw_line(eRow, (sCol+eCol) / 2 - 2, eRow, 2 + (sCol+eCol) / 2, color, ledNo);
+    }
+    
 	int width = eCol - sCol;
 	int height = eRow - sRow;
 
@@ -284,7 +303,7 @@ void drawCharacter(char character, int sRow, int sCol, int eRow, int eCol, uint1
 		case 'c':
 		case 'C':
 		draw_line(sRow + height/2, sCol, sRow + height, sCol, color, ledNo);                // draw left line
-		draw_line(sRow + height/2, sCol, sRow + height/2, sCol + width, color, ledNo); // draw middle line
+		draw_line(sRow, sCol, sRow, sCol + width, color, ledNo);                        // draw middle line
 		draw_line(sRow + height, sCol, sRow + height, sCol + width, color, ledNo); // draw bottom line
 		break;
 		case 'd':
@@ -540,42 +559,92 @@ void drawTimeMenu()
 
 void drawStocks()
 {
-    fill_color(CYAN, LED_ONE);
-    fill_color(BLUE, LED_TWO);
+    unsigned int i;
+    fill_color(BLACK, LED_ONE);
+    fill_color(BLACK, LED_TWO);
     
     int startRow = 5;
     int startIdx = 5;
     int height = 10;
     int width = 14;
-    for(int i = 0; i < kaasu[0].company.length(); ++i)
+    for(i = 0; i < kaasu[0].company.length(); ++i)
     {
-        drawCharacter(kaasu[0].company[i], startRow, startIdx, startRow + height, startIdx + width, RED, LED_ONE);
+        drawCharacter(kaasu[0].company[i], startRow, startIdx, startRow + height, startIdx + width, YELLOW, LED_ONE);
         startIdx += width + 3;
     }
     
-    startIdx = 20;
-    startRow += height + 3;
-    for(int i = 0; i < kaasu[0].value.length(); ++i)
+    height = 10;
+    width = 10;
+    startIdx = 10;
+    startRow += height + 4;
+    for(i = 0; i < kaasu[0].value.length(); ++i)
     {
         drawCharacter(kaasu[0].value[i], startRow, startIdx, startRow + height, startIdx + width, RED, LED_ONE);
         startIdx += width + 3;
     }
     
     startIdx = 5;
-    startRow += height + 3;
-    for(int i = 0; i < kaasu[1].company.length(); ++i)
+    height = 10;
+    width = 14;
+    startRow += height + 4;
+    for(i = 0; i < kaasu[1].company.length(); ++i)
     {
-        drawCharacter(kaasu[1].company[i], startRow, startIdx, startRow + height, startIdx + width, RED, LED_ONE);
+        drawCharacter(kaasu[1].company[i], startRow, startIdx, startRow + height, startIdx + width, YELLOW, LED_ONE);
         startIdx += width + 3;
     }
     
-    startIdx = 20;
-    startRow += height + 3;
-    for(int i = 0; i < kaasu[1].value.length(); ++i)
+    height = 10;
+    width = 10;
+    startIdx = 10;
+    startRow += height + 4;
+    for(i = 0; i < kaasu[1].value.length(); ++i)
     {
         drawCharacter(kaasu[1].value[i], startRow, startIdx, startRow + height, startIdx + width, RED, LED_ONE);
         startIdx += width + 3;
     }
+    
+    // ----------------------------------------------------------------------------------------------------------- //
+    
+    startRow = 5;
+    startIdx = 5;
+    height = 10;
+    width = 14;
+    for(i = 0; i < kaasu[2].company.length(); ++i)
+    {
+        drawCharacter(kaasu[2].company[i], startRow, startIdx, startRow + height, startIdx + width, YELLOW, LED_TWO);
+        startIdx += width + 3;
+    }
+    
+    height = 10;
+    width = 10;
+    startIdx = 10;
+    startRow += height + 4;
+    for(i = 0; i < kaasu[2].value.length(); ++i)
+    {
+        drawCharacter(kaasu[2].value[i], startRow, startIdx, startRow + height, startIdx + width, RED, LED_TWO);
+        startIdx += width + 3;
+    }
+    
+    height = 10;
+    width = 14;
+    startIdx = 5;
+    startRow += height + 4;
+    for(i = 0; i < kaasu[3].company.length(); ++i)
+    {
+        drawCharacter(kaasu[3].company[i], startRow, startIdx, startRow + height, startIdx + width, YELLOW, LED_TWO);
+        startIdx += width + 3;
+    }
+    
+    height = 10;
+    width = 10;
+    startIdx = 10;
+    startRow += height + 4;
+    for(i = 0; i < kaasu[3].value.length(); ++i)
+    {
+        drawCharacter(kaasu[3].value[i], startRow, startIdx, startRow + height, startIdx + width, RED, LED_TWO);
+        startIdx += width + 3;
+    }
+    
 }
 
 void drawCurrentPage()
@@ -586,6 +655,8 @@ void drawCurrentPage()
         drawWeatherInfo();
     else if(currentPage == PAGE_STOCKS)
         drawStocks();
+    else if(currentPage == PAGE_CAPITALONE)
+        drawPastTenTransactions();
     else
         drawTimeMenu();
     
@@ -796,7 +867,7 @@ void draw_rectangle(uint8_t sRow, uint8_t sCol, uint8_t eRow, uint8_t eCol, uint
 	delay_ms(SSD1331_DELAYS_HWLINE);
 }
 
-void drawPastTenTransactions(int *transactions, int noTransactions, int ledNo)
+void drawPastTenTransactions()
 {
     int maxVal = 0, minVal = 0;
     for(int i = 0; i < noTransactions; ++i)
@@ -805,25 +876,56 @@ void drawPastTenTransactions(int *transactions, int noTransactions, int ledNo)
         if(transactions[i] < minVal) minVal = transactions[i];
     }
 
-	fill_color(BLACK, ledNo);
-    draw_line(2, 2, 62, 2, WHITE, ledNo);
-    draw_line(31, 2, 31, 94, WHITE, ledNo);
+	fill_color(BLACK, LED_ONE);
+	fill_color(BLACK, LED_TWO);
+    draw_line(2, 2, 62, 2, WHITE, LED_ONE);
+    draw_line(32, 2, 32, 94, WHITE, LED_ONE);
 
     if(noTransactions == 0) return;
 
-    int totalWidth = 94 - 2;
-    int width = totalWidth / noTransactions;
+    int startRow = 2;
+    int startIdx = 2;
+    int height = 6;
+    int width = 6;
+    // String title = "Acc. Activity";
+    // for(int i = 0; i < title.length(); ++i)
+    // {
+    //     drawCharacter(title[i], startRow, startIdx, startRow + height, startIdx + width, YELLOW, LED_ONE);
+    //     startIdx += width + 2;
+    // }
+    
 
-    int startIdx = 3;
+
+    int totalWidth = 95 - 2;
+    width = totalWidth / noTransactions;
+
+    startIdx = 3;
     for(int i = 0; i < noTransactions; ++i)
     {
         if(transactions[i] < 0)
-            draw_rectangle(startIdx, 32, startIdx + (startIdx + width), 32 + ( minVal / transactions[i] ), RED, RED, ledNo);
+            draw_rectangle(33, startIdx, 33 + ( 20 * transactions[i] / minVal ), (startIdx + width), RED, RED, LED_ONE);
         else
-            draw_rectangle(2, (startIdx - maxVal / transactions[i]) , 
-                                (maxVal / transactions[i]) ,( startIdx + width ), GREEN, GREEN, ledNo);
+            draw_rectangle(31 - ( 20 * transactions[i] / maxVal ), startIdx, 31, startIdx + width, GREEN, GREEN, LED_ONE);
 
         startIdx += width;
+    }
+    
+    startRow = 32;
+    int startCol = 2;
+    for(int i = 0; i < noTransactions; ++i)
+    {
+        if(transactions[i] < 0)
+        {
+            draw_line(startRow, startCol, startRow + ( 10 * transactions[i] / minVal ), (startCol + width), RED, LED_TWO);
+            startRow += ( 10 * transactions[i] / minVal );
+        }
+        else
+        {
+            draw_line(startRow, startCol, startRow - ( 10 * transactions[i] / maxVal ), startCol + width, GREEN, LED_TWO);
+            startRow -= ( 10 * transactions[i] / maxVal );
+        }
+
+        startCol += width;
     }
 }
 
@@ -908,11 +1010,6 @@ void dateTimeHandler(const char *event, const char *data)
     }
 }
 
-void capitalOneHandler(const char *event, const char *data)
-{
-    Particle.publish("temp", data);
-}
-
 void requestAllData()
 {
     Particle.publish("weather");
@@ -921,30 +1018,111 @@ void requestAllData()
     //Particle.publish("capitalOne");
 }
 
+void capitalOneHandler(const char *event, const char *data)
+{
+    int i = 0;
+    int idx = -1; char ch;
+    while(data[i] != '\0')
+    {
+        if(data[i] == 'd')
+        {
+            if(idx < 0) {}
+            else
+            {
+                if(ch == 'w') transactions[idx] *= -1;
+                ch = 'd';
+                idx++;
+            }
+        }
+        else if(data[i] == 'w')
+        {
+            if(idx < 0) {}
+            else
+            {
+                if(ch == 'w') transactions[idx] *= -1;
+                ch = 'w';
+                idx++;
+            }
+        }
+        else if(data[i] == ' ')
+        {
+            // ignore
+        }
+        else
+        {
+            transactions[idx] = transactions[idx] * 10 + data[i] - '0';
+        }
+        ++i;
+    }
+    
+    if(currentPage == PAGE_CAPITALONE)
+    {
+        drawCurrentPage();
+    }
+}
+
+void stocksHandler(const char *event, const char *data)
+{
+    int i = 0;
+    int userNo = 0;
+    int type = 0;
+    while(data[i] != '\0')
+    {
+        if(data[i] == '#')
+        {
+            type = 1;
+        }
+        if(data[i] == '!')
+        {
+            userNo++;
+            type = 0;
+        }
+        
+        if(type == 0)
+            kaasu[userNo].company += data[i];
+        else kaasu[userNo].value += data[i];
+    }
+    
+    if(currentPage == PAGE_STOCKS)
+    {
+        drawCurrentPage();
+    }
+}
+
 void setup()
 {
     spi_init();
     initializeOLED(LED_ONE);
     initializeOLED(LED_TWO);
     
+    PB_1ButtonState = 0;
+    PB_2ButtonState = 0;
+    
+    pinMode(PB_1, INPUT);
+    pinMode(PB_2, INPUT);
+    
     Particle.subscribe("hook-response/weather", weatherHandler, MY_DEVICES);
     Particle.subscribe("hook-response/dateTime", dateTimeHandler, MY_DEVICES);
     //Particle.subscribe("hook-response/capitalOne", capitalOneHandler, MY_DEVICES);
-    //Particle.subscribe("hook-response/stocks", stocksHandler, MY_DEVICES);
+    Particle.subscribe("hook-response/stocks", stocksHandler, MY_DEVICES);
     
     requestAllData();
     
     kaasu[0].company = "MSFT";
-    kaasu[1].company = "GOOG";
-    kaasu[0].value = "10.2";
-    kaasu[1].value = "10002.33";
+    kaasu[1].company = "FB";
+    kaasu[2].company = "COF";
+    kaasu[3].company = "ENVA";
+    kaasu[0].value = "62.74";
+    kaasu[1].value = "127.04";
+    kaasu[2].value = "87.34";
+    kaasu[3].value = "14.00";
+    
     neram.min = 43;
 	neram.hour = 9;
 	neram.year = 2017;
 	neram.month = 01;
 	neram.day = 22;
-    int transacts[] = {1,2,3,4,5,6,7,8,9,11};
-    int number_transacts = 10;
+	
     
     //drawPastTenTransactions(transacts, number_transacts);
 	
@@ -955,7 +1133,6 @@ void setup()
 	}
 	
 	//delay_ms(60000);
-	
 	drawCurrentPage();
 }
 
@@ -963,12 +1140,35 @@ void loop()
 {
     String temperature = String(random(60, 80));
     //Particle.publish("temp", temperature, PRIVATE);
+    PB_1ButtonState = digitalRead(PB_1);
+    PB_2ButtonState = digitalRead(PB_2);
+    //Sample Push Buttons
+    if(PB_1ButtonState == HIGH) 
+    {
+        int x = currentPage;
+        x++;
+        x = x % 4;
+        currentPage = (Page)x;
+        drawCurrentPage();
+    } 
+    
+    else if(PB_2ButtonState == HIGH) 
+    {
+        int x = currentPage;
+        x--;
+        x = x % 4;
+        currentPage = (Page)x;
+        drawCurrentPage();
+    }
+    
+    //Reset States
+    PB_1ButtonState = 0;
+    PB_2ButtonState = 0;
 
+    processCounter += 3; 
+    delay(100);
     
-    processCounter += 30; 
-    delay(30000);
-    
-    if(processCounter == 120)
+    if(processCounter == 1200)
     {
         processCounter = 0;
         requestAllData();
