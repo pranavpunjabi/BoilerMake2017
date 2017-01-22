@@ -24,7 +24,7 @@ router.get('/', function(req, res, next) {
     		console.log(res);
     		ans=res;
 			});
-  			res.send("49F 5MPH Cloudy");
+  			res.send("49#5#Cloudy");
   		}
   		else {
   			res.render('index' , {title: 'Express'});
