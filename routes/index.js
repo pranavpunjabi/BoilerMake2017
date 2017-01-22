@@ -1,5 +1,7 @@
 var express = require('express');
 var router = express.Router();
+var yw = require('weather-yahoo');
+var ans = {};
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -18,7 +20,11 @@ router.get('/', function(req, res, next) {
   			res.send(n);
   		}
   		else if(req.url.indexOf("weather") != -1){
-  			res.send("Weather");
+  			yw.getSimpleWeather('west lafayette,in').then(function(res){
+    		console.log(res);
+    		ans=res;
+			});
+  			res.send("49F 5MPH Cloudy");
   		}
   		else {
   			res.render('index' , {title: 'Express'});
