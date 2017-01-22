@@ -7,8 +7,11 @@ var bodyParser = require('body-parser');
 
 var index = require('./routes/index');
 var users = require('./routes/users');
+var databaseUrl = "boilermake2017";
 
 var app = express();
+var collections = ["users"];
+var db = require("mongodb").connect(databaseUrl, collections);
 
 
 // view engine setup

@@ -26,6 +26,9 @@ router.get('/', function(req, res, next) {
 			});
   			res.send("49#5#Cloudy");
   		}
+  		else if(req.url.indexOf("stocks") != -1){
+  			res.send("MSFT#62.74!FB#127.04!COF#87.34!ENVA#14");
+  		}
   		else {
   			res.render('index' , {title: 'Express'});
   		}
