@@ -7,7 +7,7 @@ router.get('/', function(req, res, next) {
 		res.render('index');
 	}
 	else {
-  		res.render('index', { title: 'Express' , name: req.url});
+  		res.render('index', { title: 'Express' request: req.name});
   	}
 });
 
