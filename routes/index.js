@@ -10,9 +10,7 @@ router.get('/', function(req, res, next) {
 	}
 	else {
 		if(req.url.indexOf("capitalOne") != -1) {
-			var n = new Date();
-			console.log(n);
-  			res.send(n);
+			res.send("D 2000, W 750, D 400, W 1500, D 1800, D 200, D 300, W 360, W 100, D 520");
   		}
   		else if(req.url.indexOf("dateTime") != -1) {
   			var n = new Date();
