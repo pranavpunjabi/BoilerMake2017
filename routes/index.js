@@ -3,7 +3,12 @@ var router = express.Router();
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
+	if(req.url == '/') {
+		res.render('index');
+	}
+	else {
+  		res.render('index', { title: 'Express' , name: req.url});
+  	}
 });
 
 module.exports = router;
