@@ -8,10 +8,14 @@ router.get('/', function(req, res, next) {
 	}
 	else {
 		if(req.url.indexOf("capitalOne") != -1) {
-  			res.send('Capital One');
+			var n = new Date();
+			console.log(n);
+  			res.send(n);
   		}
   		else if(req.url.indexOf("dateTime") != -1) {
-  			res.send("Date and Time");
+  			var n = new Date();
+			console.log(n);
+  			res.send(n);
   		}
   		else if(req.url.indexOf("weather") != -1){
   			res.send("Weather");
